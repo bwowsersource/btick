@@ -75,6 +75,11 @@ Run without global install:
 node ./bin/index.js resources/example.jsml resources/args.json
 ```
 
+Stream args through `stdin`
+```bash
+echo '{"name": "echo"}' | node ./bin/index.js resources/example.jsml
+```
+
 ## Template basics
 
 Templates are plain text with `${...}` expressions.
