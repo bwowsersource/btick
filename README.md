@@ -1,6 +1,6 @@
 # btick
 
-`btick` is a JavaScript template-literal preprocessor for Node.js.
+`btick` is a [JavaScript template-literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) preprocessor for Node.js.
 
 It evaluates `.jsml` templates and produces rendered text (example: HTML), while supporting:
 
