@@ -1,7 +1,141 @@
-# backtick
-A javascript hypertext preprocessor for nodejs
+# btick
 
-## Why is it better?
-Because backtick is familar, yet different. 
-It uses source files written in javascript's template literal syntax to generate content. This can be used for generating config files, 
-or with help of a web-server it can serve dynamic html like php does. Backtick runs in a nodejs environment, which means you have access to npm modules
+`btick` is a JavaScript template-literal preprocessor for Node.js.
+
+It evaluates `.jsml` templates and produces rendered text (example: HTML), while supporting:
+
+- inline JavaScript expressions
+- async template values
+- mutable and immutable template scope (`const`)
+- capture groups for custom block rendering (loops/repetition)
+
+## Installation
+
+### Global CLI
+
+```bash
+npm install -g btick
+```
+
+### Local project dependency
+
+```bash
+npm install btick
+```
+
+## CLI usage
+
+The package exposes the CLI command `btick`:
+
+```bash
+btick <template-file> [args-json]
+```
+
+- `<template-file>`: required path to your template (for example, `.jsml`)
+- `[args-json]`: optional JSON file whose content becomes template globals
+
+### Examples
+
+Render the bundled sample:
+
+```bash
+btick resources/example.jsml resources/args.json
+```
+
+Write output to a file:
+
+```bash
+btick resources/example.jsml resources/args.json > output.html
+```
+
+Run without global install:
+
+```bash
+node ./bin/index.js resources/example.jsml resources/args.json
+```
+
+## Template basics
+
+Templates are plain text with `${...}` expressions.
+
+```js
+<h1>Hello ${args.name}</h1>
+<p>Time: ${new Date().toISOString()}</p>
+```
+
+Expressions can return:
+
+- strings/numbers/booleans (rendered as text)
+- promises (awaited)
+- objects (used to update template scope)
+
+### Scope updates
+
+Return an object to set scope variables:
+
+```js
+${{ title: "Welcome" }}
+<h1>${({ title }) => title}</h1>
+```
+
+Return `{ const: {...} }` to define immutable scope values:
+
+```js
+${{ const: { appName: "btick" } }}
+<p>${({ appName }) => appName}</p>
+```
+
+Attempting to reassign a `const` key throws an error.
+
+## Node API
+
+```js
+const fs = require('fs');
+const btick = require('btick');
+
+async function main() {
+	const template = fs.readFileSync('./resources/example.jsml', 'utf8');
+	const globals = { args: { name: { morning: 'Akash', evening: 'Webcrafti' } } };
+
+	const { text, ns, render } = await btick(template, globals);
+
+	console.log(text);
+	console.log(ns);
+
+	// Re-render with an updated namespace
+	const rerendered = await render({ ...ns, extra: 'value' });
+	console.log(rerendered.text);
+}
+
+main();
+```
+
+### Exported helpers
+
+- `btick.groom(str)`: escapes raw backticks in template text
+- `btick.createCaptureGroup(handler?)`: create custom capture group markers
+- `btick.captureGroupEnd`: helper marker for capture group termination
+
+## Local example server
+
+Start the included demo server:
+
+```bash
+npm run serve
+```
+
+Then open:
+
+```text
+http://localhost:8083/example
+```
+
+The server reads templates from `resources/*.jsml`.
+
+## Project structure
+
+- `bin/index.js`: CLI entrypoint (`btick`)
+- `code/index.js`: main compiler/renderer API
+- `code/server.js`: demo HTTP server
+- `resources/example.jsml`: sample template
+- `resources/args.json`: sample input args
