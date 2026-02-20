@@ -3,17 +3,31 @@ const { awaitSeries, dumpData, functionize, findFirstDuplicateKey } = require('.
 const { createCaptureControls } = require('./captureGroups');
 const { CAPTURE_END, CAPTURE_START, CAPTURED, COMMENT_CLOSE, } = require('./consts');
 const { renderTokens } = require('./renderer');
-const { symbolicNS, isSymbolic } = require('./symbolicType.util');
+const { symbolicCtx, isSymbolic } = require('./symbolicType.util');
 
 
 const SOURCEFILE_STUB = "template.jsml";
 
 let currentFile = "someFileName";
+/**
+ * Persists intermediate artifacts for debugging or inspection.
+ * @example keepArtifacts('tokens', { segments: [] })
+ *
+ * @param {string} type - Artifact category.
+ * @param {unknown} data - Artifact payload.
+ * @returns {void}
+ */
 const keepArtifacts = (type, data) => {
     dumpData(currentFile, type, data)
 }
 
-const backTickTagFn = () => (segments, ...args) => {
+/**
+ * Creates the runtime template tag function used to evaluate template segments.
+ * @example const tagFn = makeTagFn();
+ *
+ * @returns {(segments: TemplateStringsArray, ...args: unknown[]) => { text: string, ctx: Record<string, unknown>, toString: () => string }}
+ */
+const makeTagFn = () => (segments, ...args) => {
 
     // const fnArgs = args.filter(arg => (typeof arg === 'function'));
 
@@ -49,13 +63,20 @@ const backTickTagFn = () => (segments, ...args) => {
             return seg1 + String(val) + seg2;
 
         });
-        return { text, ns: { ...moduleScopeVars, ...moduleScopeConsts }, toString: () => text }
+        return { text, ctx: { ...moduleScopeVars, ...moduleScopeConsts }, toString: () => text }
     } catch (e) {
         throw processedError(e);
     }
 }
 
 
+/**
+ * Escapes raw backtick characters in a string for safe template literal embedding.
+ * @example escapeBackticks('a`b')
+ *
+ * @param {string} str - Input string.
+ * @returns {string}
+ */
 function escapeBackticks(str) {
     const char = '`';
     const escapedChar = '${"`"}';
@@ -74,6 +95,13 @@ function escapeBackticks(str) {
     return out.join(escapedChar);
 }
 
+/**
+ * Builds a tokenizer tag function around a template source string.
+ * @example const tagFactory = tokenizer('Hi ${name}')
+ *
+ * @param {string} [source=''] - Raw template source.
+ * @returns {(...args: unknown[]) => () => { segments: string[], statements: string[], statementPreVals: unknown[] }}
+ */
 function tokenizer(source = '') {
     source = source.replaceAll(/\r\n/gi, '\n');
 
@@ -122,17 +150,26 @@ function tokenizer(source = '') {
 }
 
 
+/**
+ * Renders a JSML template with provided globals and development options.
+ * @example await backtick('<h1>${name}</h1>', { name: 'World' })
+ *
+ * @param {string} template - Template source text.
+ * @param {Record<string, unknown>} [globals={}] - Variables exposed to template scope.
+ * @param {{ filename?: string }} [devOptions={ filename: SOURCEFILE_STUB }] - Render-time options.
+ * @returns {Promise<{ output?: string, ctx?: Record<string, unknown>, render: (ctx: Record<string, unknown>) => Promise<unknown> }>} 
+ */
 const backtick = async (template, globals = {}, devOptions = {
     filename: SOURCEFILE_STUB
 }) => {
     if (typeof globals !== "object") throw new Error("`globals` argument must be of type `object|undefined`");
-    const tagFn = backTickTagFn();
+    const tagFn = makeTagFn();
     const captureControls = createCaptureControls();
     const context = {
         ...globals,
         bt: tagFn,
         capture: captureControls,
-        ns: {},
+        ctx: {},
     }
 
 
@@ -142,14 +179,14 @@ const backtick = async (template, globals = {}, devOptions = {
         'return bt`' + template + '`; //# sourceURL=' + devOptions.filename,
         context
     );
-    const tokenizeTemplate = withBackticks({ ...context, ns: symbolicNS, bt: tokenizerTagfn });
+    const tokenizeTemplate = withBackticks({ ...context, ctx: symbolicCtx, bt: tokenizerTagfn });
     const tokens = tokenizeTemplate();
 
     const out = await renderTokens({ ...tokens, context });
     return {
         ...out,
-        render: ns => renderTokens({
-            ...tokens, globals: { ...context, ns }
+        render: ctx => renderTokens({
+            ...tokens, context: { ...context, ...ctx }
         })
     }
     // return tagFn(tokens.segments, ...(tokens.statements).map(s => "${" + s + "}"))
@@ -159,11 +196,27 @@ const backtick = async (template, globals = {}, devOptions = {
     // }
 }
 
+/**
+ * Applies capture marker metadata onto a capture handler.
+ * @example applyCaptureMarker(() => COMMENT_CLOSE, { open: CAPTURE_START })
+ *
+ * @param {Function & { captureMarker?: Record<string, string> }} handler - Capture handler function.
+ * @param {Record<string, string>} newMarkers - Marker values to merge.
+ * @returns {Function & { captureMarker: Record<string, string> }}
+ */
 function applyCaptureMarker(handler, newMarkers) {
     const markers = { ...handler.captureMarker, ...newMarkers }
     handler.captureMarker = markers;
     return handler;
 }
+
+/**
+ * Creates a capture group opening handler.
+ * @example const group = createCaptureGroup()
+ *
+ * @param {() => string} [handler=() => COMMENT_CLOSE] - Optional close marker handler.
+ * @returns {Function & { captureMarker: Record<string, string> }}
+ */
 const createCaptureGroup = (handler = () => COMMENT_CLOSE) => {
     return applyCaptureMarker(handler, { open: CAPTURE_START });
 };

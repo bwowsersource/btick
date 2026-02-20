@@ -36,6 +36,27 @@ btick <template-file> [args-json]
 
 ### Examples
 
+Minimal example:
+
+```bash
+btick resources/minimal.jsml resources/minimal.args.json
+```
+
+`resources/minimal.jsml`:
+
+```js
+<h1>Hello ${name}</h1>
+<p>2 + 3 = ${2 + 3}</p>
+```
+
+`resources/minimal.args.json`:
+
+```json
+{
+	"name": "World"
+}
+```
+
 Render the bundled sample:
 
 ```bash
@@ -97,13 +118,13 @@ async function main() {
 	const template = fs.readFileSync('./resources/example.jsml', 'utf8');
 	const globals = { args: { name: { morning: 'Akash', evening: 'Webcrafti' } } };
 
-	const { text, ns, render } = await btick(template, globals);
+	const { text, ctx, render } = await btick(template, globals);
 
 	console.log(text);
-	console.log(ns);
+	console.log(ctx);
 
-	// Re-render with an updated namespace
-	const rerendered = await render({ ...ns, extra: 'value' });
+	// Re-render with updated context state
+	const rerendered = await render({ ...ctx, extra: 'value' });
 	console.log(rerendered.text);
 }
 

@@ -7,8 +7,8 @@ function createCaptureControls() {
     const captureEndHandler = (inlineRenderer = () => '') => {
         const tokenGroup = (segments, statementFns, opener) => {
             return async function groupStatementFn(context) {
-                const renderFn = (cgroupNs) => {
-                    return renderParsedTokens({ segments, statementFns, context: { ...context, ns: cgroupNs } }).then(({ text }) => text)
+                const renderFn = (cgroupCtx) => {
+                    return renderParsedTokens({ segments, statementFns, context: { ...context, ctx: cgroupCtx } }).then(({ text }) => text)
                 }
                 const openerRenderer = await opener(context);
                 const renderer = typeof openerRenderer === "function" ? openerRenderer : inlineRenderer;

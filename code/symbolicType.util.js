@@ -37,9 +37,9 @@ function symbolicType() {
 
     });
 }
-const symbolicNS = symbolicType();
+const symbolicCtx = symbolicType();
 module.exports = {
-    symbolicNS,
+    symbolicCtx,
     isSymbolic(val) {
         return !!Object.getOwnPropertyDescriptor(val||{},marker)
     }

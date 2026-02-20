@@ -51,13 +51,13 @@ async function jsmlRouter(req) {
         return backtick(groomed, { ...exampleGlobal, args: examplePayload });
     } catch (e) {
         console.error(e);
-        return { text: "Not found!!", ns: null }
+        return { text: "Not found!!", ctx: null }
     }
 }
 
 http.createServer(function (req, res) {
-    jsmlRouter(req).then(({ text, ns }) => {
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-NS': JSON.stringify(ns) });
+    jsmlRouter(req).then(({ text, ctx }) => {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-CTX': JSON.stringify(ctx) });
 
         res.end(text);
     });

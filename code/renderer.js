@@ -26,7 +26,7 @@ function getTokenCapturer() {
                 const { tokens } = openGroups.pop();
                 const segments = tokens.map(([_, seg]) => seg);
                 const statementFns = tokens.map(([statement]) => statement);
-                const groupOpener = statementFns.shift(); //  1st statement is group opening. Re-run it to run with `ns` for any functions involved
+                const groupOpener = statementFns.shift(); //  1st statement is group opening. Re-run it to run with `ctx` for any functions involved
                 const groupStatementFn = tokenGroup(segments, statementFns, groupOpener);
                 if (!openGroups.length) { // root of nest
                     return groupStatementFn;
@@ -45,12 +45,12 @@ function getTokenCapturer() {
     return analyzeTokens;
 }
 
-function newNSContext(seedNS = {}) {
-    const { const: consts = {}, ...vars } = seedNS;
-    const getNs = () => ({ ...vars, ...consts });
+function newCtxContext(seedCtx = {}) {
+    const { const: consts = {}, ...vars } = seedCtx;
+    const getCtx = () => ({ ...vars, ...consts });
 
     const evalArg = async (arg, readonly) => {
-        const val = (typeof arg === 'function') ? arg(getNs()) : arg;
+        const val = (typeof arg === 'function') ? arg(getCtx()) : arg;
         const result = await val;
         if (
             !readonly &&
@@ -68,20 +68,20 @@ function newNSContext(seedNS = {}) {
         } else if (result !== undefined && result !== null && result !== false) return String(result);
         return null;
     }
-    return { evalArg, getNs };
+    return { evalArg, getCtx };
 }
 
 
 
-async function executeStatements(statementFns, seedNS = {}, globals) {
-    const { evalArg, getNs } = newNSContext(seedNS);
+async function executeStatements(statementFns, seedCtx = {}, globals) {
+    const { evalArg, getCtx } = newCtxContext(seedCtx);
 
     const values = await awaitSeries(statementFns, async (statementFn, i) => {
-        const arg = await statementFn({ ...globals, ns: getNs() });
+        const arg = await statementFn({ ...globals, ctx: getCtx() });
         return await evalArg(arg);
     });
 
-    return { ns: getNs(), values };
+    return { ctx: getCtx(), values };
 }
 
 function interpolate(segments, vals) {
@@ -99,11 +99,11 @@ function interpolate(segments, vals) {
 
 async function renderParsedTokens({ segments, statementFns, context = {} }) {
 
-    const out = await executeStatements(statementFns, context.ns || {}, context);
+    const out = await executeStatements(statementFns, context.ctx || {}, context);
     const text = interpolate(segments, out.values);
     return {
         text,
-        ns: out.ns,
+        ctx: out.ctx,
     };
 }
 
