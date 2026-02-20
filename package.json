@@ -1,16 +1,22 @@
 {
   "name": "btick",
-  "version": "0.0.10",
-  "description": "hypertext preprocessor using javascript template literals",
+  "version": "0.0.11",
+  "description": "JavaScript template-literal preprocessor for Node.js",
   "main": "code/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve": "node ./code/server.js"
   },
-  "author": "webcrafti",
+  "author": "akash@bwowser.com",
   "license": "ISC",
+  "files": [
+    "bin",
+    "code",
+    "resources",
+    "README.md"
+  ],
   "bin": {
-    "btick": "./bin/index.js"
+    "btick": "bin/index.js"
   },
   "dependencies": {}
 }

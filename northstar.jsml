@@ -1,0 +1,117 @@
+${{
+    const: {
+        scopeVar1: "This is scope variable 1",
+    },
+    scopeVar2: "T<b>his is scope variable 2</b>"
+}}
+<h1>Hello world</h1>
+using bt,<strike>bt_,bt__</strike> inside an inline function <br>
+${bt`this is an example usage of inline function: "${() => "This string was returned by an inline function"}" using bt`}
+<br>
+Aliases bt_,bt__ have been removed. bt now returns an object with a custom toString.
+    <p>
+    Greetings from ${() => {  
+        const timeOfDay = (new Date()).getHours() > 11 ? "evening" : "morning"; 
+        return args.name[timeOfDay]; 
+    }}
+</p >
+<h2>How are you? </h2>
+<p>
+    Test 2
+    The time now is ${new Date().toString()}
+</p>
+<ul>${() => {
+        const array = [1, 2, 3, 4, 5];
+        return array.map(item => `<li>${item} </li>`).join('');
+    }}</ul>
+<p>
+ "about" is a global value inserted by example-server: about: ${about}
+</p>
+
+<h2>Scope variables</h2>
+<p>
+    ${({ scopeVar1 }, invokSeqIndex) => scopeVar1 + "invokSeqIndex" + invokSeqIndex}
+    <br>
+    ${({ scopeVar2 }) => scopeVar2}
+    <br>
+    ${(_, invokSeqIndex) => "invokSeqIndex" + invokSeqIndex}
+</p>
+
+Trying to modify scope variables
+${() => ({
+        const: {
+            cantUpdateScopeVar1: "If I try to update scopeVar1, the parser throws error. try changin this key to scopeVar1"
+        },
+        scopeVar2: "<b>Modified scope variable 2</b>"
+    })}
+
+
+<h2>Scope variables</h2>
+<p>
+    ${({ scopeVar1 }, invokSeqIndex) => scopeVar1 + "invokSeqIndex" + invokSeqIndex}
+    <br>
+    ${({ scopeVar2 }) => scopeVar2}
+    <br>
+    ${({cantUpdateScopeVar1}, invokSeqIndex) => cantUpdateScopeVar1+":invokSeqIndex" + invokSeqIndex}. 
+    The reason is scopeVar1 is a constant. constants cannot be modified once they are set
+</p>
+${() => ({
+   // scopeVar1: "Modify scopeVar1 as mutable", // uncommetn this line to verify const check is working
+    scopeVar2: "<b>Modified scope variable 2 again</b>"
+})}
+
+<code disabled>This is a test for(`) escaping unbalanced backtick (`) character in (`)template body</code><br>
+<code disabled>This is(`) a test for escaping(`) balanced backtick (`) character in template body(`)</code>
+
+
+<h3>Hardcore way to loop</h3>
+<ul>
+${capture}
+    <li> item${ns.i}</li>
+    ${capture}
+    <li> nested item${ns.i}${ns.j}</li>
+        ${capture}
+    <li> nestedx2 item${ns.i}${ns.j}${ns.k}</li>
+${capture.end(async (render)=>{
+    let out = '';
+    for(let i=0; i<2; i++){
+        out+= await render({i:ns.i,j:ns.j,k:i});
+    }
+    return out;
+})}
+${capture.end(async (render)=>{
+    let out = '';
+    for(let i=0; i<2; i++){
+        out+= await render({i:ns.i,j:i});
+    }
+    return out;
+})}
+${capture.end(async (render)=>{
+    let out = '';
+    for(let i=0; i<2; i++){
+        out+= await render({i});
+    }
+    return out;
+})}
+</ul>
+
+<h3>Human friendly loop</h3>
+<ul>
+${repeat({i:0},({i})=>i<3?{i:i+1}:false)}
+<li>${ns.i}</li>
+${repeat({j:0,...ns},({j})=> j<3?{j:j+1}:false)}
+<li>${ns.i}:${ns.j}</li>
+${repeat.end}
+${repeat.end}
+
+
+<h3>symbolicType test</h3>
+${{as:{bs:"ns.as.bs"}}}
+${ns.as.bs}
+During tokenization, ns is not defined. One problem with this is that template parsing will fail (js limitation). 
+ns={}, ns.as=undefined, ns.as.bs = undefined.bs, this will throw an error.
+
+To get around this, we created a new symbolictype, it is basically a nested proxy object that ignore everything during tokenization.
+
+
+</ul>
